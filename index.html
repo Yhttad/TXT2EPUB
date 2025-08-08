@@ -1072,11 +1072,22 @@
                         超过此长度的行不会被识别为章节标题
                     </p>
                     
-                    <label for="min-line-gap">最小行间距</label>
-                    <input type="number" id="min-line-gap" value="0" min="0" max="5">
-                    <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px;">
-                        章节标题前后需要的最小空行数（0=不要求空行）
-                    </p>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label for="min-gap-before">标题前最小空行数</label>
+                            <input type="number" id="min-gap-before" value="0" min="0" max="5">
+                            <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px;">
+                                0=不要求空行
+                            </p>
+                        </div>
+                        <div>
+                            <label for="min-gap-after">标题后最小空行数</label>
+                            <input type="number" id="min-gap-after" value="0" min="0" max="5">
+                            <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px;">
+                                0=不要求空行
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -1577,9 +1588,10 @@
             
             // 获取章节识别参数
             const maxTitleLength = parseInt(document.getElementById('max-title-length').value) || 50;
-            const minLineGap = parseInt(document.getElementById('min-line-gap').value) || 0;
+            const minGapBefore = parseInt(document.getElementById('min-gap-before').value) || 0;
+            const minGapAfter = parseInt(document.getElementById('min-gap-after').value) || 0;
             
-            // 构建正则表达式模式
+            // 构建正则表达式模式 - 支持纯数字章节
             const buildPattern = (prefix, suffix, separator, numType) => {
                 let pattern = '^';
                 
@@ -1610,7 +1622,8 @@
                     pattern += '\\s*'; // 如果没有分隔符，数字和标题之间允许有空格
                 }
                 
-                pattern += '(.+)$';
+                // 标题部分改为可选，支持纯数字章节
+                pattern += '(.+)?$';
                 return new RegExp(pattern);
             };
             
@@ -1620,7 +1633,7 @@
                 buildPattern(l3Prefix, l3Suffix, l3Separator, l3NumType) : null;
             
             // 识别章节
-            for (let i = 0; i < lines.length; i++) {
+            outer: for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 
                 // 跳过空行
@@ -1629,51 +1642,47 @@
                 // 检查行长度限制
                 if (line.length > maxTitleLength) continue;
                 
-                // 检查行独立性（前后空行）
-                if (minLineGap > 0) {
-                    let isIsolated = true;
-                    
-                    // 检查前minLineGap行
-                    for (let j = 1; j <= minLineGap; j++) {
+                // 检查标题前空行
+                if (minGapBefore > 0) {
+                    for (let j = 1; j <= minGapBefore; j++) {
                         if (i - j >= 0 && lines[i - j].trim() !== '') {
-                            isIsolated = false;
-                            break;
+                            continue outer;
                         }
                     }
-                    
-                    // 检查后minLineGap行
-                    if (isIsolated) {
-                        for (let j = 1; j <= minLineGap; j++) {
-                            if (i + j < lines.length && lines[i + j].trim() !== '') {
-                                isIsolated = false;
-                                break;
-                            }
+                }
+                
+                // 检查标题后空行
+                if (minGapAfter > 0) {
+                    for (let j = 1; j <= minGapAfter; j++) {
+                        if (i + j < lines.length && lines[i + j].trim() !== '') {
+                            continue outer;
                         }
                     }
-                    
-                    if (!isIsolated) continue;
                 }
                 
                 // 尝试匹配不同层级
                 let match;
                 if ((match = line.match(level1Pattern))) {
+                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 1,
-                        title: match[2].trim(),
+                        title: titleText,
                         line: i + 1,
                         valid: true
                     });
                 } else if ((match = line.match(level2Pattern))) {
+                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 2,
-                        title: match[2].trim(),
+                        title: titleText,
                         line: i + 1,
                         valid: true
                     });
                 } else if (level3Enabled && (match = line.match(level3Pattern))) {
+                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 3,
-                        title: match[2].trim(),
+                        title: titleText,
                         line: i + 1,
                         valid: true
                     });
@@ -1782,11 +1791,43 @@
 <head>
   <title>${title} - 封面</title>
   <style>
-    body { margin: 0; padding: 0; text-align: center; background: #f8f9fa; }
-    .cover-container { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-    .cover-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; color: #333; }
-    .cover-author { font-size: 1.8rem; margin-bottom: 2rem; color: #666; }
-    .cover-image { max-width: 60%; max-height: 60vh; margin: 0 auto 2rem; border: 1px solid #ddd; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-radius: 5px; }
+    body { 
+        margin: 0; 
+        padding: 0; 
+        text-align: center; 
+        background: #f8f9fa; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+    .cover-container { 
+        max-width: 80%;
+        text-align: center;
+    }
+    .cover-title { 
+        font-size: 1.1rem;  /* 与正文字体大小相同 */
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #333;
+        text-align: center;
+        width: 100%;
+    }
+    .cover-author { 
+        font-size: 1.1rem;  /* 与正文字体大小相同 */
+        color: #666;
+        text-align: center;
+        width: 100%;
+    }
+    .cover-image { 
+        max-width: 60%; 
+        max-height: 60vh; 
+        margin: 0 auto 1.5rem; 
+        border: 1px solid #ddd; 
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
+        border-radius: 5px; 
+    }
   </style>
 </head>
 <body>
@@ -1806,17 +1847,17 @@
                     // 在封面页中包含图片 - 修复iOS兼容性问题（正确使用自闭合标签）
                     coverHtml += `
     <img class="cover-image" src="${coverImageName}" alt="${title} 封面" />
-    <h1 class="cover-title">${title}</h1>
-    <h2 class="cover-author">${author}</h2>
+    <div class="cover-title">${title}</div>
+    <div class="cover-author">${author}</div>
   </div>
 </body>
 </html>`;
                 } else {
                     // 没有封面图片时使用文字封面
                     coverHtml += `
-    <h1 class="cover-title">${title}</h1>
-    <h2 class="cover-author">${author}</h2>
-    <div style="margin-top: 3em; font-style: italic; color: #777;">
+    <div class="cover-title">${title}</div>
+    <div class="cover-author">${author}</div>
+    <div style="margin-top: 2em; font-style: italic; color: #777; font-size: 1.1rem;">
       本书由TXT转EPUB工具生成<br />
       ${new Date().toLocaleDateString()}
     </div>
