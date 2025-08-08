@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TXT转EPUB转换工具 - 专业小说排版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #7209b7;
+            --success: #4caf50;
+            --warning: #f9a826;
+            --danger: #e63946;
+            --gray: #f5f5f5;
+            --gray-dark: #e0e0e0;
+            --text: #333333;
+            --text-light: #666666;
+            --white: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            border: 1px solid #e1e8ed;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        header p {
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+            position: relative;
+        }
+
+        .progress-steps {
+            display: flex;
+            background: var(--gray);
+            padding: 15px 20px;
+            position: relative;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .progress-bar {
+            position: absolute;
+            height: 4px;
+            background: var(--primary);
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.5s ease;
+            z-index: 1;
+            box-shadow: 0 0 8px rgba(67, 97, 238, 0.4);
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-icon {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--white);
+            color: var(--text-light);
+            font-weight: bold;
+            border: 3px solid var(--gray-dark);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .step.active .step-icon {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .step.done .step-icon {
+            background: var(--success);
+            color: var(--white);
+            border-color: var(--success);
+        }
+
+        .step-text {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .step.active .step-text,
+        .step.done .step-text {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .content-section {
+            padding: 30px;
+            display: none;
+            background: #ffffff;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2 i {
+            background: rgba(67, 97, 238, 0.15);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--primary);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed var(--gray-dark);
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        .control-group h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group h3 i {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-dark);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #ffffff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            outline: none;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+
+        .file-upload {
+            border: 3px dashed var(--gray-dark);
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            position: relative;
+            background: var(--gray);
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.1);
+        }
+
+        .file-upload i {
+            font-size: 3.5rem;
+            color: var(--primary-light);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover i {
+            transform: scale(1.1);
+            color: var(--primary);
+        }
+
+        .file-upload h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .file-upload p {
+            color: var(--text-light);
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 14px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+
+        .upload-btn:hover {
+            background: var(--primary-light);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+        }
+
+        input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .hierarchy-rules {
+            background: var(--gray);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .level-group {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eee;
+        }
+
+        .level-header {
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.2rem;
+        }
+
+        .level-header i {
+            margin-right: 10px;
+            color: var(--secondary);
+            font-size: 1.3rem;
+        }
+
+        .level-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .chapter-preview {
+            max-height: 450px;
+            overflow-y: auto;
+            border: 1px solid var(--gray-dark);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            background: var(--white);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .chapter-item {
+            padding: 12px 15px;
+            border-left: 4px solid var(--gray);
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .chapter-item:hover {
+            background: #f8f9ff;
+            border-left-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .chapter-item.level-1 {
+            border-left-color: var(--primary);
+            font-weight: bold;
+            padding-left: 20px;
+            background: #f0f4ff;
+        }
+
+        .chapter-item.level-2 {
+            padding-left: 30px;
+            border-left-color: var(--primary-light);
+        }
+
+        .chapter-item.level-3 {
+            padding-left: 40px;
+            border-left-color: var(--warning);
+        }
+
+        .chapter-item.invalid {
+            background: rgba(255, 213, 79, 0.15);
+            border-left: 4px solid var(--warning);
+        }
+
+        .chapter-item.invalid::after {
+            content: "!";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--warning);
+            color: white;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .chapter-label {
+            font-size: 0.85rem;
+            background: rgba(67, 97, 238, 0.15);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 35px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 1.05rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn i {
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 2px solid var(--gray-dark);
+        }
+
+        .btn-outline:hover {
+            background: var(--gray);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-success:hover {
+            background: #388e3c;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+
+        .alert {
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            border-left: 5px solid;
+        }
+
+        .alert i {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .alert-danger {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--danger);
+            border-left-color: var(--danger);
+        }
+
+        .alert-info {
+            background: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .alert-success {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+            border-left-color: var(--success);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 14px;
+            background: var(--gray-dark);
+            border-radius: 7px;
+            overflow: hidden;
+            margin-top: 30px;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 7px;
+            width: 0;
+            transition: width 0.4s ease;
+            background: linear-gradient(90deg, #4361ee, #7209b7);
+        }
+
+        .progress-stage {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            font-size: 0.9rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 25px;
+            padding: 15px 30px;
+            background: var(--success);
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            font-size: 1.1rem;
+        }
+
+        .download-link:hover {
+            background: #388e3c;
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .download-link i {
+            margin-right: 12px;
+            font-size: 1.3rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 850px;
+            max-height: 90vh;
+            overflow: auto;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e0e0e0;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-light);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: #f5f5f5;
+            color: var(--danger);
+        }
+
+        .modal-header {
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--gray);
+            padding-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin-bottom: 0;
+            font-size: 1.8rem;
+        }
+
+        .error-modal {
+            background: rgba(230, 57, 70, 0.08);
+            border-left: 5px solid var(--danger);
+        }
+
+        .platform-tips {
+            background: rgba(67, 97, 238, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .platform-tips h4 {
+            margin-bottom: 12px;
+            color: var(--primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .platform-tips ul {
+            padding-left: 25px;
+        }
+
+        .platform-tips li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .cover-preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9faff;
+            border-radius: 12px;
+            border: 1px dashed #4361ee;
+        }
+
+        .cover-preview-container img {
+            max-width: 250px;
+            max-height: 350px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .cover-preview-container h3 {
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+
+        .spinner {
+            border: 5px solid rgba(67, 97, 238, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid var(--primary);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loading-message {
+            font-size: 1.2rem;
+            color: var(--text);
+            text-align: center;
+            max-width: 80%;
+        }
+
+        #retry-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: none;
+        }
+
+        #retry-btn:hover {
+            background: var(--primary-light);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .step-text {
+                font-size: 0.75rem;
+            }
+
+            .level-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-container {
+                flex-direction: column;
+            }
+
+            .btn-container .btn {
+                width: 100%;
+                margin-bottom: 10px;
+                justify-content: center;
+            }
+
+            header {
+                padding: 20px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.6rem;
+            }
+            
+            .content-section {
+                padding: 20px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .file-upload {
+                padding: 25px 15px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-message">正在加载必要组件，请稍候...</div>
+        <button id="retry-btn">重试加载</button>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-book"></i> TXT 转 EPUB 转换工具</h1>
+            <p>支持本地运行，无需服务器 | 响应式设计 | 自定义章节层级 | 实时预览 | iOS优化</p>
+        </header>
+
+        <div class="progress-steps">
+            <div class="progress-bar" style="width: 0%"></div>
+            <div class="step active" data-step="1">
+                <div class="step-icon">1</div>
+                <span class="step-text">上传文件</span>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-icon">2</div>
+                <span class="step-text">元数据</span>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-icon">3</div>
+                <span class="step-text">章节规则</span>
+            </div>
+            <div class="step" data-step="4">
+                <div class="step-icon">4</div>
+                <span class="step-text">封面设置</span>
+            </div>
+            <div class="step" data-step="5">
+                <div class="step-icon">5</div>
+                <span class="step-text">生成 EPUB</span>
+            </div>
+        </div>
+
+        <!-- 上传文件区域 -->
+        <section id="step-1" class="content-section active">
+            <h2><i class="fas fa-file-upload"></i> 上传 TXT 文件</h2>
+            
+            <div class="control-group">
+                <div class="file-upload">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>拖放文件到此区域或点击上传</h3>
+                    <p>支持任何文本编码格式，自动识别 UTF-8、ASCII 等常见编码</p>
+                    <div class="upload-btn">选择 TXT 文件</div>
+                    <input type="file" id="txt-file" accept=".txt">
+                </div>
+                
+                <div id="file-info" style="display: none;" class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>已成功上传文件:</strong> 
+                        <span id="filename"></span>
+                        <div id="encoding-info"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <div></div>
+                <button class="btn btn-primary" onclick="nextStep(2)">下一步 <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </section>
+
+        <!-- 元数据设置区域 -->
+        <section id="step-2" class="content-section">
+            <h2><i class="fas fa-file-alt"></i> 元数据设置</h2>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>元数据说明</strong> 
+                    <p>这些信息将嵌入到 EPUB 文件中，帮助识别书籍内容和作者</p>
+                </div>
+            </div>
+            
+            <div class="form-grid">
+                <div class="control-group">
+                    <h3><i class="fas fa-tag"></i> 基础信息</h3>
+                    <label for="epub-title">标题</label>
+                    <input type="text" id="epub-title" placeholder="输入书籍标题">
+                    
+                    <label for="epub-author">作者</label>
+                    <input type="text" id="epub-author" placeholder="输入作者姓名">
+                    
+                    <label for="epub-filename">输出文件名</label>
+                    <input type="text" id="epub-filename" placeholder="自定义 EPUB 文件名">
+                </div>
+                
+                <div class="control-group">
+                    <h3><i class="fas fa-align-left"></i> 描述信息</h3>
+                    <label for="epub-description">内容描述</label>
+                    <textarea id="epub-description" rows="4" placeholder="输入书籍简介..."></textarea>
+                    
+                    <label for="epub-language">语言</label>
+                    <input type="text" id="epub-language" value="zh-CN">
+                    
+                    <label for="epub-publisher">出版商</label>
+                    <input type="text" id="epub-publisher" placeholder="出版商名称">
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button class="btn btn-outline" onclick="prevStep(1)"><i class="fas fa-arrow-left"></i> 上一步</button>
+                <button class="btn btn-primary" onclick="nextStep(3)">下一步 <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </section>
+
+        <!-- 章节规则配置区域 -->
+        <section id="step-3" class="content-section">
+            <h2><i class="fas fa-sitemap"></i> 章节层级配置</h2>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>配置说明</strong> 
+                    <p>小说建议使用两级结构（卷+章），技术文档可启用三级结构</p>
+                </div>
+            </div>
+            
+            <div class="hierarchy-rules">
+                <div class="level-group">
+                    <div class="level-header">
+                        <i class="fas fa-layer-group"></i> 第1层级 (卷/部)
+                    </div>
+                    <div class="level-controls">
+                        <div>
+                            <label for="l1-prefix">前缀</label>
+                            <input type="text" id="l1-prefix" placeholder="例如: 第, √, Chap">
+                        </div>
+                        <div>
+                            <label for="l1-suffix">后缀</label>
+                            <input type="text" id="l1-suffix" placeholder="例如: 卷|部">
+                        </div>
+                        <div>
+                            <label for="l1-separator">分隔符</label>
+                            <input type="text" id="l1-separator" placeholder="例如: 空格或点">
+                        </div>
+                        <div>
+                            <label for="l1-numtype">数字类型</label>
+                            <select id="l1-numtype">
+                                <option value="chinese">中文数字</option>
+                                <option value="arabic">阿拉伯数字</option>
+                                <option value="both" selected>混合识别</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="level-group">
+                    <div class="level-header">
+                        <i class="fas fa-layer-group"></i> 第2层级 (章/回)
+                    </div>
+                    <div class="level-controls">
+                        <div>
+                            <label for="l2-prefix">前缀</label>
+                            <input type="text" id="l2-prefix" value="第" placeholder="例如: 第">
+                        </div>
+                        <div>
+                            <label for="l2-suffix">后缀</label>
+                            <input type="text" id="l2-suffix" value="章|章回" placeholder="例如: 章|章回">
+                        </div>
+                        <div>
+                            <label for="l2-separator">分隔符</label>
+                            <input type="text" id="l2-separator" value=" " placeholder="例如: 空格">
+                        </div>
+                        <div>
+                            <label for="l2-numtype">数字类型</label>
+                            <select id="l2-numtype">
+                                <option value="chinese">中文数字</option>
+                                <option value="arabic" selected>阿拉伯数字</option>
+                                <option value="both">混合识别</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="level-group">
+                    <div class="level-header">
+                        <i class="fas fa-layer-group"></i> 第3层级 (节/段)
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-level3"> 
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div id="level3-controls" style="display:none;">
+                        <div class="level-controls">
+                            <div>
+                                <label for="l3-prefix">前缀</label>
+                                <input type="text" id="l3-prefix" placeholder="例如: ✅, ★">
+                            </div>
+                            <div>
+                                <label for="l3-suffix">后缀</label>
+                                <input type="text" id="l3-suffix" placeholder="例如: 节|段">
+                            </div>
+                            <div>
+                                <label for="l3-separator">分隔符</label>
+                                <input type="text" id="l3-separator" value=". " placeholder="例如: .">
+                            </div>
+                            <div>
+                                <label for="l3-numtype">数字类型</label>
+                                <select id="l3-numtype">
+                                    <option value="chinese">中文数字</option>
+                                    <option value="arabic" selected>阿拉伯数字</option>
+                                    <option value="both">混合识别</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 章节识别参数配置 -->
+            <div class="form-grid">
+                <div class="control-group">
+                    <h3><i class="fas fa-cog"></i> 章节识别参数</h3>
+                    
+                    <label for="max-title-length">最大标题长度</label>
+                    <input type="number" id="max-title-length" value="50" min="20" max="100">
+                    <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px;">
+                        超过此长度的行不会被识别为章节标题
+                    </p>
+                    
+                    <label for="min-line-gap">最小行间距</label>
+                    <input type="number" id="min-line-gap" value="0" min="0" max="5">
+                    <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px;">
+                        章节标题前后需要的最小空行数（0=不要求空行）
+                    </p>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button class="btn btn-outline" onclick="prevStep(2)"><i class="fas fa-arrow-left"></i> 上一步</button>
+                <button class="btn btn-primary" onclick="showChapterPreview()">预览章节结构</button>
+                <button class="btn btn-primary" onclick="nextStep(4)">下一步 <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </section>
+
+        <!-- 封面设置区域 -->
+        <section id="step-4" class="content-section">
+            <h2><i class="fas fa-image"></i> 封面设置</h2>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>封面说明</strong> 
+                    <p>封面图片将作为 EPUB 文件的封面显示</p>
+                </div>
+            </div>
+            
+            <div class="form-grid">
+                <div class="control-group">
+                    <h3><i class="fas fa-book-cover"></i> 封面图片</h3>
+                    <label for="cover-file">上传封面</label>
+                    <input type="file" id="cover-file" accept=".jpg,.jpeg,.png">
+                    <p style="font-size: 0.95rem; color: var(--text-light); margin-top: 8px;">
+                        支持 JPG 或 PNG 格式，建议尺寸：600×800像素
+                    </p>
+                    
+                    <div id="cover-preview" class="cover-preview-container" style="display: none;">
+                        <h3><i class="fas fa-image"></i> 封面预览</h3>
+                        <img id="cover-image" src="" alt="封面预览">
+                        <p id="cover-filename" style="color: var(--text-light); margin-top: 10px;"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button class="btn btn-outline" onclick="prevStep(3)"><i class="fas fa-arrow-left"></i> 上一步</button>
+                <button class="btn btn-primary" onclick="nextStep(5)">生成 EPUB <i class="fas fa-book"></i></button>
+            </div>
+        </section>
+
+        <!-- 生成进度区域 -->
+        <section id="step-5" class="content-section">
+            <h2><i class="fas fa-cogs"></i> 生成 EPUB 文件</h2>
+            
+            <div id="convert-info" class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>准备生成 EPUB</strong> 
+                    <p>将根据您的设置生成 EPUB 电子书文件</p>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3><i class="fas fa-book"></i> 输出信息</h3>
+                <div class="form-grid">
+                    <div>
+                        <label>标题</label>
+                        <input type="text" id="output-title" disabled>
+                    </div>
+                    <div>
+                        <label>作者</label>
+                        <input type="text" id="output-author" disabled>
+                    </div>
+                    <div>
+                        <label>文件名</label>
+                        <input type="text" id="output-filename" disabled>
+                    </div>
+                    <div>
+                        <label>章节数量</label>
+                        <input type="text" id="output-chapters" disabled>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar-inner"></div>
+                <div id="progress-stage" class="progress-stage">准备中...</div>
+            </div>
+            
+            <div id="download-section" style="display:none; text-align:center; margin-top:25px;">
+                <h3>EPUB 文件已生成</h3>
+                <button id="download-btn" class="download-link">
+                    <i class="fas fa-download"></i> 下载 EPUB 文件
+                </button>
+                <div class="platform-tips">
+                    <h4><i class="fas fa-info-circle"></i> 平台下载提示</h4>
+                    <ul>
+                        <li><strong>iOS 用户</strong>: 点击下载按钮后，在Safari菜单中选择"下载链接文件"，然后保存到"文件"应用</li>
+                        <li><strong>Android 用户</strong>: 文件将保存到默认下载目录，可在"文件管理"中找到</li>
+                        <li><strong>Windows 用户</strong>: 文件将保存到浏览器默认下载位置</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button class="btn btn-outline" onclick="prevStep(4)"><i class="fas fa-arrow-left"></i> 上一步</button>
+                <button id="convert-btn" class="btn btn-success" onclick="convertToEpub()">开始转换 <i class="fas fa-magic"></i></button>
+            </div>
+        </section>
+    </div>
+
+    <!-- 章节预览模态框 -->
+    <div id="chapter-preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-eye"></i> 章节识别预览</h2>
+            </div>
+            
+            <div id="preview-alert" class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>识别成功!</strong> 
+                    共检测到 <span id="chapter-count">0</span> 个章节
+                </div>
+            </div>
+            
+            <div id="preview-container" class="chapter-preview">
+                <!-- 动态生成预览内容 -->
+            </div>
+            
+            <div class="btn-container" style="margin-top: 20px;">
+                <button class="btn btn-outline" onclick="closeModal()">关闭预览</button>
+                <button class="btn btn-primary" onclick="applyPreviewChanges()">应用设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误提示模态框 -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content error-modal">
+            <span class="close-modal" onclick="closeErrorModal()">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> 转换失败</h2>
+            </div>
+            
+            <div id="error-content" style="padding: 20px; font-size: 1.1rem;">
+                <!-- 错误内容将在这里显示 -->
+            </div>
+            
+            <div class="btn-container" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="closeErrorModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 动态加载JSZip和FileSaver.js
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 检测是否iOS系统
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+        
+        // 检测是否在本地文件环境中
+        function isLocalEnvironment() {
+            return window.location.protocol === 'file:';
+        }
+        
+        // 加载必要的库
+        async function loadLibraries() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const loadingMessage = document.getElementById('loading-message');
+            const retryBtn = document.getElementById('retry-btn');
+            
+            try {
+                // 尝试加载JSZip和FileSaver
+                loadingMessage.textContent = '正在加载JSZip库...';
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+                
+                loadingMessage.textContent = '正在加载FileSaver库...';
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
+                
+                // 检查库是否加载成功
+                if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+                    throw new Error('核心库未正确加载');
+                }
+                
+                // 隐藏加载界面
+                loadingOverlay.style.display = 'none';
+                
+                // 初始化工具
+                initTool();
+            } catch (error) {
+                console.error('库加载失败:', error);
+                loadingMessage.innerHTML = `加载失败: ${error.message}<br>请检查网络连接后重试`;
+                retryBtn.style.display = 'block';
+            }
+        }
+        
+        // 重试加载
+        document.getElementById('retry-btn').addEventListener('click', loadLibraries);
+        
+        // 进度管理和步骤控制
+        let currentStep = 1;
+        let txtContent = "";
+        let chapters = [];
+        let currentBook = null;
+        let coverImageFile = null;
+        let coverImageType = "";
+        let generatedEpubBlob = null;
+        let epubFileName = "";
+        
+        function nextStep(step) {
+            document.querySelector(`#step-${currentStep}`).classList.remove('active');
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+            
+            currentStep = step;
+            
+            document.querySelector(`#step-${currentStep}`).classList.add('active');
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+            
+            // 更新进度条
+            const progress = Math.round((currentStep - 1) * (100 / 4));
+            document.querySelector('.progress-bar').style.width = `${progress}%`;
+        }
+        
+        function prevStep(step) {
+            nextStep(step);
+        }
+        
+        // 打开章节预览模态框
+        function showChapterPreview() {
+            // 识别章节
+            identifyChapters();
+            
+            // 更新UI
+            document.getElementById('preview-alert').style.display = 'flex';
+            document.getElementById('chapter-count').textContent = chapters.length;
+            
+            // 渲染预览
+            const previewContainer = document.getElementById('preview-container');
+            previewContainer.innerHTML = '';
+            
+            // 限制预览数量
+            const maxPreview = 20;
+            const previewChapters = chapters.slice(0, maxPreview);
+            
+            // 动画效果
+            let delay = 0;
+            previewChapters.forEach(chapter => {
+                setTimeout(() => {
+                    const item = document.createElement('div');
+                    item.className = `chapter-item level-${chapter.level} ${chapter.valid ? '' : 'invalid'}`;
+                    item.innerHTML = `
+                        <span class="chapter-label">[${chapter.level}级]</span> <span>${chapter.title}</span>
+                        <span style="float: right; color: var(--text-light);">第${chapter.line}行</span>
+                    `;
+                    previewContainer.appendChild(item);
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(10px)';
+                    
+                    setTimeout(() => {
+                        item.style.transition = 'all 0.3s ease';
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 10);
+                }, delay);
+                
+                delay += 80;
+            });
+            
+            // 显示更多选项
+            if (chapters.length > maxPreview) {
+                const moreItem = document.createElement('div');
+                moreItem.className = 'chapter-item';
+                moreItem.innerHTML = `
+                    <span class="chapter-label">[...]</span>
+                    <span>还有 ${chapters.length - maxPreview} 个章节未显示</span>
+                `;
+                previewContainer.appendChild(moreItem);
+            }
+            
+            // 显示模态框
+            document.getElementById('chapter-preview-modal').style.display = 'flex';
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('chapter-preview-modal').style.display = 'none';
+        }
+        
+        // 应用预览设置
+        function applyPreviewChanges() {
+            closeModal();
+            nextStep(4);
+        }
+        
+        // 关闭错误模态框
+        function closeErrorModal() {
+            document.getElementById('error-modal').style.display = 'none';
+        }
+        
+        // 显示错误信息
+        function showError(title, message, solution) {
+            const errorContent = document.getElementById('error-content');
+            errorContent.innerHTML = `
+                <h3 style="color: var(--danger); margin-bottom: 15px;">${title}</h3>
+                <p style="margin-bottom: 20px;">${message}</p>
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <i class="fas fa-lightbulb"></i>
+                    <div>
+                        <strong>解决方案</strong> 
+                        <p>${solution}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('error-modal').style.display = 'flex';
+        }
+
+        // 三级结构开关控制
+        document.getElementById('toggle-level3').addEventListener('change', function() {
+            const level3Controls = document.getElementById('level3-controls');
+            if (this.checked) {
+                level3Controls.style.display = 'block';
+            } else {
+                level3Controls.style.display = 'none';
+            }
+        });
+
+        // 文件上传处理
+        const fileInput = document.getElementById('txt-file');
+        const filenameSpan = document.getElementById('filename');
+        const encodingInfo = document.getElementById('encoding-info');
+        const fileInfoDiv = document.getElementById('file-info');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 智能解析文件名 - 优先解析书名号格式
+                const fileName = file.name;
+                let bookTitle = fileName.replace('.txt', '');
+                let authorName = '';
+                
+                // 新逻辑：优先识别《书名》格式
+                const pattern1 = /《(.+?)》/;  // 匹配《书名》格式
+                const match1 = fileName.match(pattern1);
+                
+                // 旧模式：书名》作者：作者名
+                const pattern2 = /《(.+?)》\s*作者[:：]\s*(.+)/;
+                const match2 = fileName.match(pattern2);
+                
+                if (match1) {
+                    bookTitle = match1[1];
+                    authorName = fileName.replace(match1[0], '')     // 移除书名号部分
+                                        .replace('.txt', '')        // 移除文件扩展名
+                                        .replace(/^\s+|\s+$/g, '')  // 移除首尾空格
+                                        .replace(/^[-_]\s*|\s*[-_]$/g, ''); // 移除首尾连接符
+                } else if (match2) {
+                    bookTitle = match2[1];
+                    authorName = match2[2].replace('.txt', '');
+                } else {
+                    bookTitle = fileName.replace('.txt', '');
+                }
+                
+                // 填充到表单
+                document.getElementById('epub-title').value = bookTitle;
+                document.getElementById('epub-author').value = authorName;
+                document.getElementById('epub-filename').value = bookTitle;
+                
+                // 显示文件信息
+                filenameSpan.textContent = file.name;
+                fileInfoDiv.style.display = 'flex';
+                
+                // 尝试识别编码并读取文件（支持UTF-8、UTF-16LE、GBK）
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const buffer = event.target.result;
+                    let encoding = null;
+                    let content = "";
+
+                    // 解码尝试顺序：UTF-8 → UTF-16LE → GBK
+                    const decoders = [
+                        { name: 'UTF-8', decoder: new TextDecoder('utf-8', { fatal: true }) },
+                        { name: 'UTF-16LE', decoder: new TextDecoder('utf-16le', { fatal: true }) }, // 新增UTF-16LE支持
+                        { name: 'GBK', decoder: new TextDecoder('gbk', { fatal: true }) }
+                    ];
+
+                    for (const { name, decoder } of decoders) {
+                        try {
+                            content = decoder.decode(buffer);
+                            encoding = name;
+                            break; // 解码成功则跳出循环
+                        } catch (e) {
+                            continue; // 解码失败则尝试下一种编码
+                        }
+                    }
+
+                    if (encoding) {
+                        txtContent = content;
+                        encodingInfo.innerHTML = `编码: <strong>${encoding}</strong> | 已成功解码`;
+                    } else {
+                        // 所有编码尝试失败时
+                        txtContent = "";
+                        encodingInfo.innerHTML = "编码: <strong>无法识别</strong> | 请尝试其他编码格式的文件";
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+        
+        // 封面预览
+        const coverFileInput = document.getElementById('cover-file');
+        coverFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const coverPreview = document.getElementById('cover-preview');
+                    const coverImage = document.getElementById('cover-image');
+                    const coverFilename = document.getElementById('cover-filename');
+                    
+                    coverImage.src = event.target.result;
+                    coverFilename.textContent = file.name;
+                    coverPreview.style.display = 'flex';
+                    
+                    // 保存封面文件信息
+                    coverImageFile = file;
+                    coverImageType = file.type;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 拖放文件支持
+        const uploadSection = document.querySelector('.file-upload');
+        uploadSection.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#4361ee';
+            this.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+        });
+        
+        uploadSection.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            this.style.backgroundColor = '';
+        });
+        
+        uploadSection.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            this.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                const event = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(event);
+            }
+        });
+        
+        // 章节识别逻辑（核心优化）
+        function identifyChapters() {
+            if (!txtContent) {
+                showError("内容为空", "未检测到有效的文本内容", "请确保已上传有效的TXT文件并包含章节内容");
+                return [];
+            }
+            
+            const lines = txtContent.split('\n');
+            chapters = [];
+            const level3Enabled = document.getElementById('toggle-level3').checked;
+            
+            // 获取用户配置
+            const l1Prefix = document.getElementById('l1-prefix').value || '';
+            const l1Suffix = document.getElementById('l1-suffix').value || '';
+            const l1Separator = document.getElementById('l1-separator').value || '';
+            const l1NumType = document.getElementById('l1-numtype').value;
+            
+            const l2Prefix = document.getElementById('l2-prefix').value || '';
+            const l2Suffix = document.getElementById('l2-suffix').value || '';
+            const l2Separator = document.getElementById('l2-separator').value || '';
+            const l2NumType = document.getElementById('l2-numtype').value;
+            
+            let l3Prefix = '';
+            let l3Suffix = '';
+            let l3Separator = '';
+            let l3NumType = '';
+            
+            if (level3Enabled) {
+                l3Prefix = document.getElementById('l3-prefix').value || '';
+                l3Suffix = document.getElementById('l3-suffix').value || '';
+                l3Separator = document.getElementById('l3-separator').value || '';
+                l3NumType = document.getElementById('l3-numtype').value;
+            }
+            
+            // 获取章节识别参数
+            const maxTitleLength = parseInt(document.getElementById('max-title-length').value) || 50;
+            const minLineGap = parseInt(document.getElementById('min-line-gap').value) || 0;
+            
+            // 构建正则表达式模式
+            const buildPattern = (prefix, suffix, separator, numType) => {
+                let pattern = '^';
+                
+                // 处理前缀 - 如果存在则必须匹配
+                if (prefix) {
+                    pattern += `(?:${prefix.replace(/\|/g, '|')})`;
+                }
+                
+                // 处理数字
+                const chineseNums = '零一二三四五六七八九十百千';
+                if (numType === 'chinese') {
+                    pattern += `([${chineseNums}]+)`;
+                } else if (numType === 'arabic') {
+                    pattern += '(\\d+)';
+                } else {
+                    pattern += `([${chineseNums}\\d]+)`;
+                }
+                
+                // 处理后缀 - 如果存在则必须匹配
+                if (suffix) {
+                    pattern += `(?:${suffix.replace(/\|/g, '|')})`;
+                }
+                
+                // 处理分隔符
+                if (separator) {
+                    pattern += `\\s*${separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`;
+                } else {
+                    pattern += '\\s*'; // 如果没有分隔符，数字和标题之间允许有空格
+                }
+                
+                pattern += '(.+)$';
+                return new RegExp(pattern);
+            };
+            
+            const level1Pattern = buildPattern(l1Prefix, l1Suffix, l1Separator, l1NumType);
+            const level2Pattern = buildPattern(l2Prefix, l2Suffix, l2Separator, l2NumType);
+            const level3Pattern = level3Enabled ? 
+                buildPattern(l3Prefix, l3Suffix, l3Separator, l3NumType) : null;
+            
+            // 识别章节
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // 跳过空行
+                if (!line) continue;
+                
+                // 检查行长度限制
+                if (line.length > maxTitleLength) continue;
+                
+                // 检查行独立性（前后空行）
+                if (minLineGap > 0) {
+                    let isIsolated = true;
+                    
+                    // 检查前minLineGap行
+                    for (let j = 1; j <= minLineGap; j++) {
+                        if (i - j >= 0 && lines[i - j].trim() !== '') {
+                            isIsolated = false;
+                            break;
+                        }
+                    }
+                    
+                    // 检查后minLineGap行
+                    if (isIsolated) {
+                        for (let j = 1; j <= minLineGap; j++) {
+                            if (i + j < lines.length && lines[i + j].trim() !== '') {
+                                isIsolated = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!isIsolated) continue;
+                }
+                
+                // 尝试匹配不同层级
+                let match;
+                if ((match = line.match(level1Pattern))) {
+                    chapters.push({
+                        level: 1,
+                        title: match[2].trim(),
+                        line: i + 1,
+                        valid: true
+                    });
+                } else if ((match = line.match(level2Pattern))) {
+                    chapters.push({
+                        level: 2,
+                        title: match[2].trim(),
+                        line: i + 1,
+                        valid: true
+                    });
+                } else if (level3Enabled && (match = line.match(level3Pattern))) {
+                    chapters.push({
+                        level: 3,
+                        title: match[2].trim(),
+                        line: i + 1,
+                        valid: true
+                    });
+                }
+            }
+            
+            // 验证章节结构
+            validateChapterStructure();
+            
+            return chapters;
+        }
+        
+        // 章节结构验证
+        function validateChapterStructure() {
+            let lastLevel = 0;
+            
+            for (let i = 0; i < chapters.length; i++) {
+                const chapter = chapters[i];
+                
+                // 检查层级跳跃（例如从1级直接到3级）
+                if (chapter.level > lastLevel + 1) {
+                    chapter.valid = false;
+                }
+                
+                lastLevel = chapter.level;
+            }
+        }
+        
+        // 转换EPUB功能
+        function convertToEpub() {
+            // 检查文件是否已上传
+            if (!fileInput.files.length) {
+                showError("文件未上传", "请先上传TXT文件", "返回第一步上传有效的TXT文件");
+                nextStep(1);
+                return;
+            }
+            
+            // 检查章节信息
+            if (chapters.length === 0) {
+                showError("章节识别失败", "未检测到有效的章节结构", "请调整章节规则设置或返回第三步重新配置");
+                nextStep(3);
+                return;
+            }
+            
+            // 更新输出信息
+            document.getElementById('output-title').value = document.getElementById('epub-title').value;
+            document.getElementById('output-author').value = document.getElementById('epub-author').value;
+            epubFileName = document.getElementById('epub-filename').value + '.epub';
+            document.getElementById('output-filename').value = epubFileName;
+            document.getElementById('output-chapters').value = chapters.length + ' 章';
+            
+            // 开始转换
+            generateEpubFile();
+        }
+        
+        // 文件名安全过滤
+        function sanitizeFilename(name) {
+            return name.replace(/[\\/:*?"<>|]/g, '');
+        }
+        
+        // 更新进度条
+        function updateProgress(percent, stage) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressStage = document.getElementById('progress-stage');
+            
+            progressBar.style.width = `${percent}%`;
+            progressStage.textContent = stage;
+        }
+        
+        // EPUB文件生成核心逻辑（修复版）
+        function generateEpubFile() {
+            const title = document.getElementById('epub-title').value || '未命名书籍';
+            const author = document.getElementById('epub-author').value || '未知作者';
+            const fileName = sanitizeFilename(
+                document.getElementById('epub-filename').value || 'ebook'
+            );
+            
+            const convertBtn = document.getElementById('convert-btn');
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = '转换中 <i class="fas fa-spinner fa-spin"></i>';
+            
+            try {
+                // 创建EPUB书籍对象
+                const book = new JSZip();
+                currentBook = book;
+                
+                // 基本文件结构
+                book.file("mimetype", "application/epub+zip");
+                const META_INF = book.folder("META-INF");
+                META_INF.file("container.xml", `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+                
+                const OEBPS = book.folder("OEBPS");
+                
+                // 生成内容文件
+                updateProgress(10, "处理章节内容...");
+                
+                // 创建封面页 - 修复iOS兼容性问题
+                let coverHtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${title} - 封面</title>
+  <style>
+    body { margin: 0; padding: 0; text-align: center; background: #f8f9fa; }
+    .cover-container { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+    .cover-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; color: #333; }
+    .cover-author { font-size: 1.8rem; margin-bottom: 2rem; color: #666; }
+    .cover-image { max-width: 60%; max-height: 60vh; margin: 0 auto 2rem; border: 1px solid #ddd; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="cover-container">`;
+                
+                // 添加封面图片（如果上传了）
+                let coverImageName = "";
+                let mediaType = "";
+                
+                if (coverImageFile) {
+                    coverImageName = `cover.${coverImageType.split('/')[1]}`;
+                    mediaType = coverImageType;
+                    
+                    // 添加封面图片到EPUB
+                    OEBPS.file(coverImageName, coverImageFile);
+                    
+                    // 在封面页中包含图片 - 修复iOS兼容性问题（正确使用自闭合标签）
+                    coverHtml += `
+    <img class="cover-image" src="${coverImageName}" alt="${title} 封面" />
+    <h1 class="cover-title">${title}</h1>
+    <h2 class="cover-author">${author}</h2>
+  </div>
+</body>
+</html>`;
+                } else {
+                    // 没有封面图片时使用文字封面
+                    coverHtml += `
+    <h1 class="cover-title">${title}</h1>
+    <h2 class="cover-author">${author}</h2>
+    <div style="margin-top: 3em; font-style: italic; color: #777;">
+      本书由TXT转EPUB工具生成<br />
+      ${new Date().toLocaleDateString()}
+    </div>
+  </div>
+</body>
+</html>`;
+                }
+                
+                OEBPS.file("cover.html", coverHtml);
+                
+                // 创建目录HTML文件
+                updateProgress(20, "生成目录结构...");
+                let tocHtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>目录</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; margin: 0; padding: 20px; background: #f8f9fa; }
+    h1 { text-align: center; margin-bottom: 30px; color: #333; }
+    nav ol { list-style: none; padding: 0; max-width: 800px; margin: 0 auto; }
+    nav li { padding: 12px 15px; border-bottom: 1px solid #eee; background: white; }
+    nav a { text-decoration: none; color: #333; display: block; font-size: 1.1rem; }
+    nav li.level-1 { font-weight: bold; padding-left: 20px; border-left: 4px solid #4361ee; }
+    nav li.level-2 { padding-left: 40px; border-left: 4px solid #4895ef; }
+    nav li.level-3 { padding-left: 60px; font-size: 1rem; border-left: 4px solid #f9a826; }
+    nav li:hover { background: #f0f4ff; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <h2 style="text-align: center; color: #666; margin-bottom: 30px;">目录</h2>
+  <nav id="toc" epub:type="toc">
+    <ol>
+      <li class="level-0">
+        <a href="cover.html">封面</a>
+      </li>`;
+
+                // 提取简介内容（第一章之前的内容）
+                let introContent = '';
+                let introHtml = '';
+                let introExists = false;
+                
+                if (chapters.length > 0) {
+                    const firstChapterLine = chapters[0].line - 1; // 章节行号从1开始，转换为索引
+                    const contentLines = txtContent.split('\n');
+                    
+                    // 提取从0行到firstChapterLine-1行（简介不包括章节标题行）
+                    for (let j = 0; j < firstChapterLine; j++) {
+                        if (contentLines[j].trim() !== '') {
+                            introContent += `<p>${contentLines[j]}</p>\n`;
+                        }
+                    }
+                    
+                    // 如果简介内容非空，则生成简介章节
+                    if (introContent.trim() !== '') {
+                        introExists = true;
+                        
+                        // 生成简介的HTML文件
+                        introHtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>简介</title>
+  <style>
+    body { font-family: serif; line-height: 1.8; margin: 0; padding: 30px; background: none; color: inherit; }
+    .intro-title { font-size: 2.2rem; text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #eee; color: #222; }
+    .intro-content { margin-top: 1.5rem; text-indent: 2em; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1 class="intro-title">简介</h1>
+  <div class="intro-content">\n${introContent}\n  </div>
+</body>
+</html>`;
+                        
+                        OEBPS.file("intro.html", introHtml);
+                        
+                        // 在目录中添加简介
+                        tocHtml += `
+      <li class="level-0">
+        <a href="intro.html">简介</a>
+      </li>`;
+                    }
+                }
+                
+                // 添加章节到目录
+                chapters.forEach((chapter, index) => {
+                    if (!chapter.valid) return;
+                    
+                    tocHtml += `
+      <li class="level-${chapter.level}">
+        <a href="chapter-${index + 1}.html">${chapter.title}</a>
+      </li>`;
+                });
+                
+                tocHtml += `
+    </ol>
+  </nav>
+</body>
+</html>`;
+                
+                OEBPS.file("toc.html", tocHtml);
+                
+                // 添加章节内容
+                updateProgress(30, "生成章节内容...");
+                let currentChapterStart = 0;
+                const contentLines = txtContent.split('\n');
+                
+                // 获取第一个章节的行号（如果存在）
+                const firstChapterLine = chapters.length > 0 ? chapters[0].line - 1 : 0;
+                
+                for (let i = 0; i < chapters.length; i++) {
+                    const chapter = chapters[i];
+                    if (!chapter.valid) continue;
+                    
+                    // 创建章节HTML文件
+                    let chapterHtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${chapter.title}</title>
+  <style>
+    body { font-family: serif; line-height: 1.8; margin: 0; padding: 30px; background: none; color: inherit; }
+    .chapter-title { font-size: 2.2rem; text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #eee; color: #222; }
+    .chapter-content { margin-top: 1.5rem; text-indent: 2em; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1 class="chapter-title">${chapter.title}</h1>
+  <div class="chapter-content">\n`;
+                    
+                    // 添加章节内容
+                    const endLine = i < chapters.length - 1 ? chapters[i + 1].line - 1 : contentLines.length;
+                    
+                    // 计算实际起始行 - 关键修复
+                    const actualStart = (i === 0 && introExists) ? firstChapterLine : currentChapterStart;
+                    
+                    for (let j = actualStart; j < endLine; j++) {
+                        // 跳过章节标题行（避免在内容中重复出现标题）
+                        if (j !== (chapter.line - 1) && contentLines[j].trim() !== '') {
+                            chapterHtml += `<p>${contentLines[j]}</p>\n`;
+                        }
+                    }
+                    
+                    chapterHtml += `  </div>
+</body>
+</html>`;
+                    
+                    // 保存章节HTML文件
+                    OEBPS.file(`chapter-${i + 1}.html`, chapterHtml);
+                    
+                    // 更新当前章节起始点
+                    currentChapterStart = endLine;
+                }
+                
+                // 生成OPF文件（修复目录问题）
+                updateProgress(60, "生成元数据...");
+                const opfContent = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="3.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:${generateUUID()}</dc:identifier>
+    <dc:title>${title}</dc:title>
+    <dc:creator>${author}</dc:creator>
+    <dc:language>zh-CN</dc:language>
+    <meta property="dcterms:modified">${new Date().toISOString()}</meta>
+    ${coverImageName ? `<meta name="cover" content="cover-image"/>` : ''}
+  </metadata>
+  <manifest>
+    <item id="cover" href="cover.html" media-type="application/xhtml+xml"/>
+    <item id="toc" href="toc.html" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    ${coverImageName ? `<item id="cover-image" href="${coverImageName}" media-type="${mediaType}" properties="cover-image"/>` : ''}
+    ${introExists ? `<item id="intro" href="intro.html" media-type="application/xhtml+xml"/>` : ''}
+    
+    <!-- 章节文件 -->
+    ${chapters.map((_, index) => `<item id="chapter${index + 1}" href="chapter-${index + 1}.html" media-type="application/xhtml+xml"/>`).join('\n    ')}
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="cover"/>
+    ${introExists ? `<itemref idref="intro"/>` : ''}
+    ${chapters.map((_, index) => `<itemref idref="chapter${index + 1}"/>`).join('\n    ')}
+  </spine>
+  <guide>
+    <reference type="cover" title="封面" href="cover.html"/>
+    <reference type="toc" title="目录" href="toc.html"/>
+  </guide>
+</package>`;
+                
+                OEBPS.file("content.opf", opfContent);
+                
+                // 生成NCX文件（修复目录问题）
+                updateProgress(80, "生成目录索引...");
+                let ncxContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="urn:uuid:${generateUUID()}"/>
+  </head>
+  <docTitle>
+    <text>${title}</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="cover" playOrder="1">
+      <navLabel>
+        <text>封面</text>
+      </navLabel>
+      <content src="cover.html"/>
+    </navPoint>`;
+                
+                // 添加简介到NCX（如果存在）
+                let playOrder = 2;
+                if (introExists) {
+                    ncxContent += `
+    <navPoint id="intro" playOrder="${playOrder++}">
+      <navLabel>
+        <text>简介</text>
+      </navLabel>
+      <content src="intro.html"/>
+    </navPoint>`;
+                }
+                
+                // 添加章节到NCX
+                chapters.forEach((chapter, index) => {
+                    if (!chapter.valid) return;
+                    
+                    ncxContent += `
+    <navPoint id="chapter${index + 1}" playOrder="${playOrder++}">
+      <navLabel>
+        <text>${chapter.title}</text>
+      </navLabel>
+      <content src="chapter-${index + 1}.html"/>
+    </navPoint>`;
+                });
+                
+                ncxContent += `
+  </navMap>
+</ncx>`;
+                
+                OEBPS.file("toc.ncx", ncxContent);
+                
+                // 生成EPUB文件并下载
+                updateProgress(90, "打包EPUB文件...");
+                book.generateAsync({
+                    type: "blob",
+                    mimeType: "application/epub+zip",
+                    compression: "DEFLATE",
+                    compressionOptions: { level: 6 }
+                }, (metadata) => {
+                    // 实时更新进度条
+                    updateProgress(90 + Math.floor(metadata.percent * 0.1), "打包EPUB文件...");
+                }).then(function(content) {
+                    updateProgress(100, "转换完成");
+                    
+                    // 保存生成的blob
+                    generatedEpubBlob = content;
+                    
+                    // 更新界面为转换成功状态
+                    document.getElementById('convert-info').className = 'alert alert-success';
+                    document.getElementById('convert-info').innerHTML = `
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>转换成功!</strong> 
+                            <p>EPUB文件已生成，包含 ${chapters.length} 个章节${introExists ? '及简介' : ''}</p>
+                        </div>
+                    `;
+                    
+                    // 显示下载按钮
+                    const downloadSection = document.getElementById('download-section');
+                    downloadSection.style.display = 'block';
+                    
+                    // 尝试自动下载（在iOS的本地环境中不自动下载）
+                    if (!isLocalEnvironment() || !isIOS()) {
+                        saveAs(generatedEpubBlob, epubFileName);
+                    }
+                    
+                    // 恢复按钮状态
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '重新转换 <i class="fas fa-redo"></i>';
+                }).catch(function(err) {
+                    console.error("生成EPUB失败", err);
+                    showError("生成EPUB失败", err.message || "未知错误", "请尝试减少章节数量或拆分大文件");
+                    
+                    // 恢复按钮状态
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '重新尝试 <i class="fas fa-redo"></i>';
+                });
+            } catch (err) {
+                console.error("生成EPUB失败", err);
+                showError("生成EPUB失败", err.message || "未知错误", "请检查文件内容并重试");
+                
+                // 恢复按钮状态
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '重新尝试 <i class="fas fa-redo"></i>';
+            }
+        }
+        
+        // 生成UUID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0,
+                      v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        // 初始化工具
+        function initTool() {
+            // 添加下载按钮事件监听
+            document.getElementById('download-btn').addEventListener('click', function() {
+                if (generatedEpubBlob) {
+                    saveAs(generatedEpubBlob, epubFileName);
+                } else {
+                    showError("文件未生成", "EPUB文件尚未生成或已过期", "请返回第五步重新生成EPUB文件");
+                }
+            });
+            
+            // 添加关闭模态框的ESC键支持
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    closeErrorModal();
+                }
+            });
+        }
+        
+        // 开始加载库
+        loadLibraries();
+    </script>
+</body>
+</html>
