@@ -6,6 +6,7 @@
     <title>TXT转EPUB转换工具 - 专业小说排版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* 原有CSS保持不变 */
         :root {
             --primary: #4361ee;
             --primary-light: #4895ef;
@@ -1552,7 +1553,7 @@
             }
         });
         
-        // 章节识别逻辑（核心优化）
+        // 章节识别逻辑（核心优化） - 修改点：使用整行作为标题
         function identifyChapters() {
             if (!txtContent) {
                 showError("内容为空", "未检测到有效的文本内容", "请确保已上传有效的TXT文件并包含章节内容");
@@ -1632,7 +1633,7 @@
             const level3Pattern = level3Enabled ? 
                 buildPattern(l3Prefix, l3Suffix, l3Separator, l3NumType) : null;
             
-            // 识别章节
+            // 识别章节 - 修改点：使用整行作为标题
             outer: for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 
@@ -1660,29 +1661,26 @@
                     }
                 }
                 
-                // 尝试匹配不同层级
+                // 尝试匹配不同层级 - 修改点：直接使用整行作为标题
                 let match;
                 if ((match = line.match(level1Pattern))) {
-                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 1,
-                        title: titleText,
+                        title: line,  // 使用整行作为标题
                         line: i + 1,
                         valid: true
                     });
                 } else if ((match = line.match(level2Pattern))) {
-                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 2,
-                        title: titleText,
+                        title: line,  // 使用整行作为标题
                         line: i + 1,
                         valid: true
                     });
                 } else if (level3Enabled && (match = line.match(level3Pattern))) {
-                    let titleText = match[2] ? match[2].trim() : match[0].trim();
                     chapters.push({
                         level: 3,
-                        title: titleText,
+                        title: line,  // 使用整行作为标题
                         line: i + 1,
                         valid: true
                     });
