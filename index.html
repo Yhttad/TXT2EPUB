@@ -1750,6 +1750,44 @@
             progressStage.textContent = stage;
         }
         
+        // 构建章节树结构（修复目录问题）
+        function buildChapterTree() {
+            const tree = [];
+            const stack = [];
+            let idCounter = 0;
+            
+            for (const chapter of chapters) {
+                if (!chapter.valid) continue;
+                
+                // 创建节点
+                const node = {
+                    id: `chapter-${++idCounter}`,
+                    level: chapter.level,
+                    title: chapter.title,
+                    line: chapter.line,
+                    children: []
+                };
+                
+                // 寻找合适的父节点
+                while (stack.length > 0 && stack[stack.length - 1].level >= node.level) {
+                    stack.pop();
+                }
+                
+                if (stack.length === 0) {
+                    // 根节点
+                    tree.push(node);
+                } else {
+                    // 添加到父节点的children
+                    stack[stack.length - 1].children.push(node);
+                }
+                
+                // 将当前节点压入栈
+                stack.push(node);
+            }
+            
+            return tree;
+        }
+        
         // EPUB文件生成核心逻辑（修复版）
         function generateEpubFile() {
             const title = document.getElementById('epub-title').value || '未命名书籍';
@@ -1942,15 +1980,30 @@
                     }
                 }
                 
+                // 构建章节树结构（修复目录问题）
+                const chapterTree = buildChapterTree();
+                
+                // 递归生成嵌套目录HTML
+                function generateTocHtml(tree) {
+                    let html = '';
+                    for (const node of tree) {
+                        html += `
+          <li class="level-${node.level}">
+            <a href="${node.id}.html">${node.title}</a>`;
+                        
+                        if (node.children.length > 0) {
+                            html += `
+            <ol>${generateTocHtml(node.children)}</ol>`;
+                        }
+                        
+                        html += `
+          </li>`;
+                    }
+                    return html;
+                }
+                
                 // 添加章节到目录
-                chapters.forEach((chapter, index) => {
-                    if (!chapter.valid) return;
-                    
-                    tocHtml += `
-      <li class="level-${chapter.level}">
-        <a href="chapter-${index + 1}.html">${chapter.title}</a>
-      </li>`;
-                });
+                tocHtml += generateTocHtml(chapterTree);
                 
                 tocHtml += `
     </ol>
@@ -1965,19 +2018,15 @@
                 let currentChapterStart = 0;
                 const contentLines = txtContent.split('\n');
                 
-                // 获取第一个章节的行号（如果存在）
-                const firstChapterLine = chapters.length > 0 ? chapters[0].line - 1 : 0;
-                
-                for (let i = 0; i < chapters.length; i++) {
-                    const chapter = chapters[i];
-                    if (!chapter.valid) continue;
-                    
-                    // 创建章节HTML文件
-                    let chapterHtml = `<?xml version="1.0" encoding="utf-8"?>
+                // 递归生成章节HTML文件
+                function generateChapterFiles(tree) {
+                    for (const node of tree) {
+                        // 创建章节HTML文件
+                        let chapterHtml = `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <title>${chapter.title}</title>
+  <title>${node.title}</title>
   <style>
     body { font-family: serif; line-height: 1.8; margin: 0; padding: 30px; background: none; color: inherit; }
     .chapter-title { font-size: 2.2rem; text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #eee; color: #222; }
@@ -1985,35 +2034,63 @@
   </style>
 </head>
 <body>
-  <h1 class="chapter-title">${chapter.title}</h1>
+  <h1 class="chapter-title">${node.title}</h1>
   <div class="chapter-content">\n`;
-                    
-                    // 添加章节内容
-                    const endLine = i < chapters.length - 1 ? chapters[i + 1].line - 1 : contentLines.length;
-                    
-                    // 计算实际起始行 - 关键修复
-                    const actualStart = (i === 0 && introExists) ? firstChapterLine : currentChapterStart;
-                    
-                    for (let j = actualStart; j < endLine; j++) {
-                        // 跳过章节标题行（避免在内容中重复出现标题）
-                        if (j !== (chapter.line - 1) && contentLines[j].trim() !== '') {
-                            chapterHtml += `<p>${contentLines[j]}</p>\n`;
+                        
+                        // 添加章节内容
+                        const nextIndex = chapters.findIndex(c => c.line > node.line);
+                        const endLine = nextIndex >= 0 ? chapters[nextIndex].line - 1 : contentLines.length;
+                        
+                        for (let j = node.line - 1; j < endLine; j++) {
+                            // 跳过章节标题行（避免在内容中重复出现标题）
+                            if (j !== (node.line - 1) && contentLines[j].trim() !== '') {
+                                chapterHtml += `<p>${contentLines[j]}</p>\n`;
+                            }
                         }
-                    }
-                    
-                    chapterHtml += `  </div>
+                        
+                        chapterHtml += `  </div>
 </body>
 </html>`;
-                    
-                    // 保存章节HTML文件
-                    OEBPS.file(`chapter-${i + 1}.html`, chapterHtml);
-                    
-                    // 更新当前章节起始点
-                    currentChapterStart = endLine;
+                        
+                        // 保存章节HTML文件
+                        OEBPS.file(`${node.id}.html`, chapterHtml);
+                        
+                        // 递归处理子节点
+                        if (node.children.length > 0) {
+                            generateChapterFiles(node.children);
+                        }
+                    }
                 }
+                
+                // 生成所有章节文件
+                generateChapterFiles(chapterTree);
                 
                 // 生成OPF文件（修复目录问题）
                 updateProgress(60, "生成元数据...");
+                
+                // 递归生成manifest和spine内容
+                function generateManifestAndSpine(tree) {
+                    let manifest = '';
+                    let spine = '';
+                    
+                    function traverse(node) {
+                        manifest += `<item id="${node.id}" href="${node.id}.html" media-type="application/xhtml+xml"/>\n    `;
+                        spine += `<itemref idref="${node.id}"/>\n    `;
+                        
+                        for (const child of node.children) {
+                            traverse(child);
+                        }
+                    }
+                    
+                    for (const node of tree) {
+                        traverse(node);
+                    }
+                    
+                    return { manifest, spine };
+                }
+                
+                const { manifest: chapterManifest, spine: chapterSpine } = generateManifestAndSpine(chapterTree);
+                
                 const opfContent = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -2032,12 +2109,12 @@
     ${introExists ? `<item id="intro" href="intro.html" media-type="application/xhtml+xml"/>` : ''}
     
     <!-- 章节文件 -->
-    ${chapters.map((_, index) => `<item id="chapter${index + 1}" href="chapter-${index + 1}.html" media-type="application/xhtml+xml"/>`).join('\n    ')}
+    ${chapterManifest}
   </manifest>
   <spine toc="ncx">
     <itemref idref="cover"/>
     ${introExists ? `<itemref idref="intro"/>` : ''}
-    ${chapters.map((_, index) => `<itemref idref="chapter${index + 1}"/>`).join('\n    ')}
+    ${chapterSpine}
   </spine>
   <guide>
     <reference type="cover" title="封面" href="cover.html"/>
@@ -2049,6 +2126,37 @@
                 
                 // 生成NCX文件（修复目录问题）
                 updateProgress(80, "生成目录索引...");
+                
+                // 递归生成NCX导航点
+                function generateNcxNavPoints(tree, playOrder = 1) {
+                    let navContent = '';
+                    let currentOrder = playOrder;
+                    
+                    for (const node of tree) {
+                        navContent += `
+    <navPoint id="${node.id}" playOrder="${currentOrder++}">
+      <navLabel>
+        <text>${node.title}</text>
+      </navLabel>
+      <content src="${node.id}.html"/>`;
+                        
+                        if (node.children.length > 0) {
+                            const childContent = generateNcxNavPoints(node.children, currentOrder);
+                            navContent += childContent.content;
+                            currentOrder = childContent.nextOrder;
+                        }
+                        
+                        navContent += `
+    </navPoint>`;
+                    }
+                    
+                    return { content: navContent, nextOrder: currentOrder };
+                }
+                
+                // 生成NCX内容
+                const ncxStartOrder = introExists ? 3 : 2;
+                const ncxNavContent = generateNcxNavPoints(chapterTree, ncxStartOrder);
+                
                 let ncxContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
@@ -2067,10 +2175,9 @@
     </navPoint>`;
                 
                 // 添加简介到NCX（如果存在）
-                let playOrder = 2;
                 if (introExists) {
                     ncxContent += `
-    <navPoint id="intro" playOrder="${playOrder++}">
+    <navPoint id="intro" playOrder="2">
       <navLabel>
         <text>简介</text>
       </navLabel>
@@ -2079,17 +2186,7 @@
                 }
                 
                 // 添加章节到NCX
-                chapters.forEach((chapter, index) => {
-                    if (!chapter.valid) return;
-                    
-                    ncxContent += `
-    <navPoint id="chapter${index + 1}" playOrder="${playOrder++}">
-      <navLabel>
-        <text>${chapter.title}</text>
-      </navLabel>
-      <content src="chapter-${index + 1}.html"/>
-    </navPoint>`;
-                });
+                ncxContent += ncxNavContent.content;
                 
                 ncxContent += `
   </navMap>
